@@ -3,7 +3,6 @@ package stirling.software.SPDF.controller.api;
 import java.io.IOException;
 import java.security.Principal;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,12 +32,12 @@ import lombok.extern.slf4j.Slf4j;
 import stirling.software.SPDF.config.security.UserService;
 import stirling.software.SPDF.config.security.saml2.CustomSaml2AuthenticatedPrincipal;
 import stirling.software.SPDF.config.security.session.SessionPersistentRegistry;
-import stirling.software.SPDF.model.ApplicationProperties;
 import stirling.software.SPDF.model.AuthenticationType;
 import stirling.software.SPDF.model.Role;
 import stirling.software.SPDF.model.User;
 import stirling.software.SPDF.model.api.user.UsernameAndPass;
-import stirling.software.SPDF.model.exception.UnsupportedProviderException;
+import stirling.software.common.model.ApplicationProperties;
+import stirling.software.common.model.exception.UnsupportedProviderException;
 
 @Controller
 @Tag(name = "User", description = "User APIs")
@@ -168,13 +167,26 @@ public class UserController {
 
     @PreAuthorize("!hasAuthority('ROLE_DEMO_USER')")
     @PostMapping("/updateUserSettings")
-    public String updateUserSettings(HttpServletRequest request, Principal principal)
+    /**
+     * Updates the user settings based on the provided JSON payload.
+     *
+     * @param updates A map containing the settings to update. The expected structure is:
+     *     <ul>
+     *       <li><b>emailNotifications</b> (optional): "true" or "false" - Enable or disable email
+     *           notifications.
+     *       <li><b>theme</b> (optional): "light" or "dark" - Set the user's preferred theme.
+     *       <li><b>language</b> (optional): A string representing the preferred language (e.g.,
+     *           "en", "fr").
+     *     </ul>
+     *     Keys not listed above will be ignored.
+     * @param principal The currently authenticated user.
+     * @return A redirect string to the account page after updating the settings.
+     * @throws SQLException If a database error occurs.
+     * @throws UnsupportedProviderException If the operation is not supported for the user's
+     *     provider.
+     */
+    public String updateUserSettings(@RequestBody Map<String, String> updates, Principal principal)
             throws SQLException, UnsupportedProviderException {
-        Map<String, String[]> paramMap = request.getParameterMap();
-        Map<String, String> updates = new HashMap<>();
-        for (Map.Entry<String, String[]> entry : paramMap.entrySet()) {
-            updates.put(entry.getKey(), entry.getValue()[0]);
-        }
         log.debug("Processed updates: {}", updates);
         // Assuming you have a method in userService to update the settings for a user
         userService.updateUserSettings(principal.getName(), updates);
